@@ -8,6 +8,12 @@ Build `itkdev/oidc-server-mock-idp` docker image:
 
 ## Usage
 
+Include the `itkdev/oidc-server-mock-idp` image and define
+[`IDENTITY_RESOURCES_INLINE`](https://github.com/Soluto/oidc-server-mock#simple-configuration)
+and
+[`USERS_CONFIGURATION_INLINE`](https://github.com/Soluto/oidc-server-mock#simple-configuration)
+(or `USERS_CONFIGURATION_PATH`).
+
 ```yaml
 services:
   idp-admin:
@@ -44,4 +50,11 @@ services:
           - Type: groups
             Value: '["GG-Rolle-dplager-admin"]'
             ValueType: json
+
+      # Users can also be defined using USERS_CONFIGURATION_PATH, e.g.
+      # USERS_CONFIGURATION_PATH: /tmp/config/.docker/idp-users.yaml
+      #
+      # Note that you have to add a volume if using USERS_CONFIGURATION_PATH, e.g.
+    #volumes:
+    #  - .:/tmp/config:ro
 ```

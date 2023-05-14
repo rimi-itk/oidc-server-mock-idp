@@ -35,7 +35,19 @@ EOF;
     {
         $io = new SymfonyStyle($input, $output);
 
+        // Make output at lease very verbose.
+        $output->setVerbosity($output->getVerbosity() | OutputInterface::VERBOSITY_VERY_VERBOSE);
         $this->setLogger(new ConsoleLogger($output));
+
+        $this->info(sprintf('Removing dokcer image %s', self::TAG));
+        $command = [
+            'docker',
+            'rm',
+            '--force',
+            self::TAG,
+        ];
+        $process = new Process($command);
+        $process->run();
 
         $environment = $this->getEnvironment();
         if ($output->isDebug()) {
@@ -44,6 +56,7 @@ EOF;
         }
 
         $dockerFilePath = $this->writeDockerfile($environment);
+        $this->info(sprintf('Dockerfile written to %s', $dockerFilePath));
 
         if ($output->isDebug()) {
             $io->section('Dockerfile');
@@ -53,6 +66,7 @@ EOF;
         $command = [
             'docker',
             'build',
+//            '--quiet',
             '--tag',
             self::TAG,
             dirname($dockerFilePath),
@@ -66,7 +80,8 @@ EOF;
         }
 
         try {
-            $process = new Process($command);
+            $this->info(sprintf('Building docker image from %s', $dockerFilePath));
+            $process = new Process($command, dirname($dockerFilePath));
             if ($output->isDebug()) {
                 $io->section('Command');
                 $io->writeln($process->getCommandLine());
@@ -74,9 +89,13 @@ EOF;
 
             $process->start();
 
-            foreach ($process as $type => $data) {
-                fwrite($process::OUT === $type ? STDOUT : STDERR, $data);
+            if ($output->isDebug()) {
+                foreach ($process as $type => $data) {
+                    fwrite($process::OUT === $type ? STDOUT : STDERR, $data);
+                }
             }
+
+            $this->info(sprintf('Docker image %s built', self::TAG));
         } finally {
             if (file_exists($dockerFilePath)) {
                 unlink($dockerFilePath);
@@ -95,15 +114,17 @@ EOF;
     {
         $path = __DIR__ . '/Dockerfile.tmp';
 
+        $stuff = implode(PHP_EOL, array_merge(...array_map(
+            static fn($name) => [
+                'ARG ' . $name,
+                'ENV ' . $name . ' $' . $name,
+            ],
+            array_keys($environment)
+        )));
+
         $content = str_replace(
             '###ENVIRONMENT###',
-            $stuff = implode(PHP_EOL, array_merge(...array_map(
-                static fn($name) => [
-                    'ARG ' . $name,
-                    'ENV ' . $name . ' $' . $name,
-                ],
-                array_keys($environment)
-            ))),
+            $stuff,
             self::Dockerfile
         );
 

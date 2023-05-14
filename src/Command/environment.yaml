@@ -78,6 +78,3 @@ IDENTITY_RESOURCES_INLINE: |
 #     - Type: groups
 #       Value: '["GG-Rolle-dplager-admin"]'
 #       ValueType: json
-
-USERS_CONFIGURATION_INLINE: |
-  []
